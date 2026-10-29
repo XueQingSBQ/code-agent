@@ -1,0 +1,205 @@
+[project]
+name = "carbide"
+version = "0.0.1"
+description = "A coding agent harness with measurable context efficiency and fault tolerance"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [
+    { name = "ShengQing521" }
+]
+keywords = [
+    "ai",
+    "agent",
+    "coding-agent",
+    "llm",
+    "anthropic",
+    "claude",
+    "context-management",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+# Lower bounds here; exact versions are pinned in uv.lock (committed).
+dependencies = [
+    "anthropic>=0.86.0",
+    "pydantic>=2.9",
+    "rich>=13.9",
+    "prompt-toolkit>=3.0.48",
+    "structlog>=24.4",
+    "python-dotenv>=1.0.1",
+    "tree-sitter>=0.25.0",
+    "tree-sitter-bash>=0.25.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/XueQingSBQ/code-agent"
+Documentation = "https://github.com/XueQingSBQ/code-agent/blob/main/docs/ARCHITECTURE.md"
+Repository = "https://github.com/XueQingSBQ/code-agent"
+Issues = "https://github.com/XueQingSBQ/code-agent/issues"
+Changelog = "https://github.com/XueQingSBQ/code-agent/blob/main/CHANGELOG.md"
+
+[project.scripts]
+carbide = "carbide.__main__:main"
+carbide-eval = "evals.swebench.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=6.0",
+    "hypothesis>=6.115",
+    "syrupy>=4.8",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "import-linter>=2.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/carbide", "evals"]
+
+[tool.hatch.build.targets.sdist]
+ignore-vcs = true
+only-include = [
+    "src/carbide",
+    "evals",
+    "README.md",
+    "LICENSE*",
+    "pyproject.toml",
+]
+include = [
+    "src/carbide/**",
+    "evals/**",
+    "README.md",
+    "LICENSE*",
+    "pyproject.toml",
+]
+exclude = [
+    "eval_results/**",
+    "tests/**",
+    "test*.py",
+    "check_*.py",
+    "debug_*.py",
+    "scratch_*.py",
+    "hello.py",
+    "*.stackdump",
+    "test_workspace/**",
+    "**/test_workspace/**",
+    ".gitignore",
+    "**/.gitignore",
+    "*.gitignore",
+    "**/*.gitignore",
+    ".carbide/**",
+    ".claude/**",
+    ".hypothesis/**",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM", "RUF", "ASYNC", "PTH"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+mypy_path = "src"
+# Tests are checked too. A test that lies about a type is a test that stops
+# catching the bug it was written for.
+files = ["src/carbide", "tests"]
+
+[[tool.mypy.overrides]]
+module = ["tree_sitter_bash.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-q --strict-markers -m 'not live'"
+markers = [
+    "live: hits the real API (excluded by default, nightly only)",
+]
+
+[tool.coverage.run]
+source = ["src/carbide"]
+branch = true
+
+[tool.importlinter]
+root_package = "carbide"
+# Required so the vendor-SDK contracts below can name third-party packages.
+include_external_packages = true
+
+# Dependencies point one way only. Without this the provider seam erodes the
+# first time something in the engine needs "just one" Anthropic-specific field.
+[[tool.importlinter.contracts]]
+name = "Layered architecture"
+type = "layers"
+layers = [
+    "carbide.cli",
+    "carbide.sdk",
+    "carbide.engine",
+    "carbide.context",
+    "carbide.tools",
+    "carbide.process",
+    "carbide.providers",
+    "carbide.prompts",
+    "carbide.infra",
+    "carbide.events",
+]
+
+# The seam itself. The engine talks to a Protocol; only the provider package is
+# allowed to know which vendor is behind it.
+[[tool.importlinter.contracts]]
+name = "Only the provider package knows the vendor SDK"
+type = "forbidden"
+# Indirect paths count. The engine must not be able to reach the vendor SDK at
+# all, not even through a re-export. carbide.sdk and carbide.cli are excluded on
+# purpose: as the composition root they are what picks the concrete provider.
+source_modules = [
+    "carbide.engine",
+    "carbide.context",
+    "carbide.tools",
+]
+forbidden_modules = ["anthropic"]
+
+# Tools are leaves. A tool that reaches back into the engine turns every tool
+# into a potential source of re-entrancy bugs.
+[[tool.importlinter.contracts]]
+name = "Tools do not reach back into the engine"
+type = "forbidden"
+source_modules = ["carbide.tools"]
+forbidden_modules = ["carbide.engine", "carbide.context", "carbide.sdk", "carbide.cli"]
+
+# The event vocabulary is what keeps the engine UI-agnostic. It must stay
+# dependency-free, or the CLI's rendering choices leak into the core.
+[[tool.importlinter.contracts]]
+name = "Event vocabulary stays dependency-free"
+type = "forbidden"
+source_modules = ["carbide.events"]
+forbidden_modules = [
+    "carbide.engine",
+    "carbide.context",
+    "carbide.tools",
+    "carbide.providers",
+    "carbide.infra",
+    "carbide.cli",
+    "rich",
+    "anthropic",
+    "pydantic",
+]

@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "name": "swebench-lite-sequential-maintenance-v1",
+  "source": "princeton-nlp/SWE-bench_Lite:test",
+  "selection_policy": "同一 SymPy 检出上的固定四阶段维护会话；每阶段先完成组合 baseline/reference preflight，再发送连续用户请求",
+  "base_repo": "sympy/sympy",
+  "tasks": [
+    {
+      "stage": 1,
+      "instance_id": "sympy__sympy-16503",
+      "track": "pretty-printing",
+      "selection_reason": "首阶段为独立的输出格式修复，建立会话初始代码状态。"
+    },
+    {
+      "stage": 2,
+      "instance_id": "sympy__sympy-16792",
+      "track": "code-generation",
+      "selection_reason": "增加 Cython autowrap 行为修复，要求保留前一阶段改动并继续维护。"
+    },
+    {
+      "stage": 3,
+      "instance_id": "sympy__sympy-17655",
+      "track": "geometry-arithmetic",
+      "selection_reason": "增加几何对象算术行为修复，扩大连续会话的跨模块上下文。"
+    },
+    {
+      "stage": 4,
+      "instance_id": "sympy__sympy-19254",
+      "track": "polynomial-bounds",
+      "selection_reason": "最后增加多项式界计算修复，作为连续长维护会话的收尾阶段。"
+    }
+  ]
+}

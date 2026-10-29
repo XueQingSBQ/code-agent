@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "name": "swebench-lite-representative-v1",
+  "source": "princeton-nlp/SWE-bench_Lite:test",
+  "selection_policy": "固定真实 issue，按任务类型分层；先完成 baseline/gold/native-environment preflight，再进入模型 A/B",
+  "tasks": [
+    {
+      "instance_id": "pallets__flask-4992",
+      "track": "configuration-api",
+      "difficulty": "small",
+      "selection_reason": "单模块 API 兼容改动，包含真实 TOML 配置输入，适合作为低复杂度基线。",
+      "expected_source_files": 1,
+      "max_pass_to_pass": 18
+    },
+    {
+      "instance_id": "pallets__flask-5063",
+      "track": "cli-behavior",
+      "difficulty": "medium",
+      "selection_reason": "CLI 输出行为与 Flask 路由元数据相关，覆盖用户可见行为和回归检查。",
+      "expected_source_files": 1,
+      "max_pass_to_pass": 54
+    },
+    {
+      "instance_id": "sympy__sympy-17022",
+      "track": "matrix-code-generation",
+      "difficulty": "medium",
+      "selection_reason": "矩阵表达式到 NumPy 代码生成的语义修复，覆盖两个相关测试模块。",
+      "expected_source_files": 1,
+      "max_pass_to_pass": 8
+    },
+    {
+      "instance_id": "sympy__sympy-18087",
+      "track": "symbolic-semantics",
+      "difficulty": "medium",
+      "selection_reason": "复数语义下的三角化简回归，要求理解假设条件而非只做字符串级修改。",
+      "expected_source_files": 1,
+      "max_pass_to_pass": 35
+    },
+    {
+      "instance_id": "sympy__sympy-18532",
+      "track": "core-api-semantics",
+      "difficulty": "medium",
+      "selection_reason": "核心表达式 API 的叶节点语义修复，风险较高且有跨模块回归测试。",
+      "expected_source_files": 1,
+      "max_pass_to_pass": 28
+    },
+    {
+      "instance_id": "sympy__sympy-19007",
+      "track": "matrix-indexing",
+      "difficulty": "hard",
+      "selection_reason": "BlockMatrix 符号索引语义修复，作为需要多轮定位和验证的较复杂任务。",
+      "expected_source_files": 1,
+      "max_pass_to_pass": 26
+    }
+  ]
+}
